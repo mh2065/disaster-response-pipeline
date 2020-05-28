@@ -27,7 +27,7 @@ def clean_data(df):
     # take first row
     row = categories.iloc[0]
 
-    # slice of last 2 chars and store in list
+    # slice of last 2 chars of each value and store in list
     category_colnames = [x[:len(x) - 2] for x in row]
 
     # rename the columns of `categories`
@@ -48,10 +48,8 @@ def clean_data(df):
     # concatenate the original dataframe with the new `categories` dataframe
     df = pd.concat([df, categories], axis=1)
 
-    # drop missing values
-    df = df.dropna()
-    ### only missing seem to be in column original and it is not needed.
-    ### drop column instead?
+    # drop duplicates
+    df = df.drop_duplicates()
 
     return df
 
@@ -63,8 +61,8 @@ def save_data(df, database_filename):
     engine = create_engine('sqlite:///{}'.format(database_filename))
 
     # input dataframe into table
-    df.to_sql('disaster_messages', engine, index=False)
-
+    df.to_sql('disaster_messages', engine, if_exists='replace', index=False)
+    
 
 def main():
     if len(sys.argv) == 4:
