@@ -12,3 +12,13 @@
     `python run.py`
 
 3. Go to http://0.0.0.0:3001/
+
+
+
+cmd commands:
+
+ETL:
+python process_data.py disaster_messages.csv disaster_categories.csv DisasterResponse.db
+
+ML:
+python train_classifier.py ../data/DisasterResponse.db classifier.pkl
