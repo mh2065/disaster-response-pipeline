@@ -1,24 +1,29 @@
-# Disaster Response Pipeline Project
+### Table of Contents
 
-### Instructions:
-1. Run the following commands in the project's root directory to set up your database and model.
+1. [Installation](#installation)
+2. [Project Motivation](#motivation)
+3. [File Descriptions](#files)
+4. [Results](#results)
+5. [Licensing, Authors, and Acknowledgements](#licensing)
 
-    - To run ETL pipeline that cleans data and stores in database
-        `python data/process_data.py data/disaster_messages.csv data/disaster_categories.csv data/DisasterResponse.db`
-    - To run ML pipeline that trains classifier and saves
-        `python models/train_classifier.py data/DisasterResponse.db models/classifier.pkl`
+## Installation <a name="installation"></a>
 
-2. Run the following command in the app's directory to run your web app.
-    `python run.py`
+There should be no necessary libraries to run the code here beyond the Anaconda distribution of Python.  The code should run with no issues using Python versions 3.*.
 
-3. Go to http://0.0.0.0:3001/
+## Project Motivation<a name="motivation"></a>
 
+This project is part of the Udacity Data Science nanodegree.
 
+## File Descriptions <a name="files"></a>
 
-cmd commands:
+process_data.py
+train_classifier.py
+run.py
 
-ETL:
-python process_data.py disaster_messages.csv disaster_categories.csv DisasterResponse.db
+## Results<a name="results"></a>
 
-ML:
-python train_classifier.py ../data/DisasterResponse.db classifier.pkl
+## Licensing, Authors, Acknowledgements<a name="licensing"></a>
+
+Credit must be given to Figure 8 for the data.
+
+Feel free to use the code here as you like!
