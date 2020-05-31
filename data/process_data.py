@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
-    '''docstring'''
+    '''Load and merge data from csv files and return data frame'''
 
     # load files
     messages = pd.read_csv(messages_filepath)
@@ -18,7 +18,7 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
-    '''docstring'''
+    '''Perform data cleaning on data frame'''
 
     # split categories into seperate category columns
     categories = df['categories'].str.split(pat=';', expand=True)
@@ -59,7 +59,7 @@ def clean_data(df):
 
 
 def save_data(df, database_filename):
-    '''docstring'''
+    '''Export data frame into SQL data base'''
 
     # instantite database engine
     engine = create_engine('sqlite:///{}'.format(database_filename))
@@ -69,6 +69,8 @@ def save_data(df, database_filename):
     
 
 def main():
+    '''Execute all process data steps'''
+
     if len(sys.argv) == 4:
 
         messages_filepath, categories_filepath, database_filepath = sys.argv[1:]

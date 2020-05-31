@@ -34,9 +34,7 @@ from sklearn.metrics import multilabel_confusion_matrix
 
 
 def load_data(database_filepath):
-    '''Load data from sqlite database
-    Input:
-    - database_filepath'''
+    '''Load data from sqlite database'''
 
     # load database table into dataframe
     df = pd.read_sql_table(table_name='disaster_messages', 
@@ -52,7 +50,7 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
-    '''docstring'''
+    '''Perform text cleaning, normalisation and tokenization on text'''
 
     # replace urls with placeholder
     url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
@@ -81,7 +79,7 @@ def tokenize(text):
 
 
 def build_model(parameters):
-    '''docstring'''
+    '''Setup ML model pipeline'''
 
     # build pipeline
     # key = step name, value = transformer or estimator object
@@ -114,7 +112,7 @@ def build_model(parameters):
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    '''docstring'''
+    '''Evaluate outcome of model'''
 
     # create predictions
     Y_pred = model.predict(X_test)
@@ -158,12 +156,14 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 
 def save_model(model, model_filepath):
-    '''docstring'''
+    '''Save the final ML model as pickle file'''
 
     pickle.dump(model, open(model_filepath, 'wb'))
 
 
 def main():
+    '''Perform all steps to train the classifier'''
+
     if len(sys.argv) == 3:
 
         # start execution timer
