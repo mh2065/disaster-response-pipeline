@@ -12,6 +12,8 @@ There should be no necessary libraries to run the code here beyond the Anaconda 
 
 ## Project Motivation<a name="motivation"></a>
 
+Classification of disaster response messages and using trained classifier in web app.
+
 This project is part of the Udacity Data Science nanodegree.
 
 ## File Descriptions <a name="files"></a>
