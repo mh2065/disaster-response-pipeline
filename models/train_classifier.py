@@ -25,6 +25,8 @@ from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import GridSearchCV
+import pickle
+from timeit import default_timer as timer
 
 # metrics
 from sklearn.metrics import classification_report
@@ -32,7 +34,9 @@ from sklearn.metrics import multilabel_confusion_matrix
 
 
 def load_data(database_filepath):
-    '''docstring'''
+    '''Load data from sqlite database
+    Input:
+    - database_filepath'''
 
     # load database table into dataframe
     df = pd.read_sql_table(table_name='disaster_messages', 
@@ -116,28 +120,39 @@ def evaluate_model(model, X_test, Y_test, category_names):
     Y_pred = model.predict(X_test)
 
     # create classification report and convert to dataframe
-    # TODO: set index category_names
-    report = classification_report(Y_test, Y_pred, output_dict=True)
+    report = classification_report(Y_test, Y_pred, 
+                                target_names=category_names, 
+                                output_dict=True)
+    
+    # transpose report so that scores are in columns
     report = pd.DataFrame(report).transpose()
     print('\n')
     print(report)
-    
+    print('\n')
+
     # multi lable confusion matrix
     # TODO: category_names labels?
     confusion_matrix = multilabel_confusion_matrix(Y_test, Y_pred)
+
+    for i in range(len(category_names)):
+        print('{}\n{}\n{}\n'.format(category_names[i], '-' * 20, confusion_matrix[i]))   
+
+    # results matrix (select columns)
+    cv_results = pd.DataFrame(model.cv_results_)
+    cv_results.sort_values(by='rank_test_score', inplace=True)
+    cv_results = cv_results[['mean_fit_time',
+                            'param_clf',
+                            'mean_test_score',
+                            'rank_test_score',
+                            'mean_train_score']]
     print('\n')
-    print(confusion_matrix)
+    print(cv_results)
 
     # GridSearch output
+    print('\nGridSearch result:\n' + '-' * 20)
     print('Best score:', model.best_estimator_)
     print('Best estimator:', model.best_estimator_)
     print('Best params:', model.best_estimator_)
-
-    # results matrix (select columns)
-    # TODO: test in jupyter
-    cv_results = pd.DataFrame(model.cv_results_);
-    print('\n')
-    print(cv_results)
 
     return report, confusion_matrix, cv_results
 
@@ -145,13 +160,14 @@ def evaluate_model(model, X_test, Y_test, category_names):
 def save_model(model, model_filepath):
     '''docstring'''
 
-    # TODO: complete function
-    pass
-    
+    pickle.dump(model, open(model_filepath, 'wb'))
 
 
 def main():
     if len(sys.argv) == 3:
+
+        # start execution timer
+        start = timer()
 
         database_filepath, model_filepath = sys.argv[1:]
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
@@ -163,15 +179,19 @@ def main():
 
         # define model parameters (estimators + values)
         parameters = [
-            {"clf": [RandomForestClassifier()],
-            "clf__n_estimators": [1, 2]},
-            {"clf": [MultiOutputClassifier(LinearSVC())],
-            "clf__estimator__C": [1.0, 2]},
+            {'clf': [RandomForestClassifier()],
+            'clf__n_estimators': [2, 10, 100, 1000],
+            'clf__max_depth': [None, 5, 10],
+            'clf__criterion': ['gini', 'entropy']},
+            {'clf': [MultiOutputClassifier(LinearSVC())],
+            'clf__estimator__C': [10.0, 100, 1000],
+            'clf__estimator__max_iter': [1000, 3000]},
             {'clf': [OneVsRestClassifier(LogisticRegression())],
+            'clf__estimator__C': [10.0, 100, 1000],
             'clf__estimator__solver': ['sag', 'saga']}
         ]
 
-
+        
         print('Building model...')
         model = build_model(parameters)
         
@@ -182,9 +202,13 @@ def main():
         evaluate_model(model, X_test, Y_test, category_names)
 
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
-        # save_model(model, model_filepath)
+        save_model(model, model_filepath)
 
         print('Trained model saved!')
+
+        # end timer
+        end = timer()
+        print("\nTime: {} seconds".format(round(end - start, 2)))
 
     else:
         print('Please provide the filepath of the disaster messages database '\
