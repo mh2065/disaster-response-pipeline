@@ -8,6 +8,7 @@ import re
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords
 nltk.download(['punkt', 'wordnet', 'averaged_perceptron_tagger'])
 
 # transformers
@@ -65,6 +66,9 @@ def tokenize(text):
     # tokenize string
     tokens = word_tokenize(text)
 
+    # remove stop words
+    tokens = [tok for tok in tokens if tok not in stopwords.words("english")]
+
     # lemmatize word tokens
     # instantiate lemmatizer
     lemmatizer = WordNetLemmatizer()
@@ -94,7 +98,7 @@ def build_model(parameters):
                 ('tfidf', TfidfTransformer())
             ]))
             
-            # process 2: placeholder for parallel step           
+            # process 2: placeholder for parallel step
         ])),
         
         # training estimator
@@ -180,14 +184,14 @@ def main():
         # define model parameters (estimators + values)
         parameters = [
             {'clf': [RandomForestClassifier()],
-            'clf__n_estimators': [2, 10, 100, 1000],
+            'clf__n_estimators': [2, 10, 100, 200],
             'clf__max_depth': [None, 5, 10],
             'clf__criterion': ['gini', 'entropy']},
             {'clf': [MultiOutputClassifier(LinearSVC())],
-            'clf__estimator__C': [10.0, 100, 1000],
+            'clf__estimator__C': [10.0, 100, 200],
             'clf__estimator__max_iter': [1000, 3000]},
             {'clf': [OneVsRestClassifier(LogisticRegression())],
-            'clf__estimator__C': [10.0, 100, 1000],
+            'clf__estimator__C': [10.0, 100, 200],
             'clf__estimator__solver': ['sag', 'saga']}
         ]
 
