@@ -9,7 +9,8 @@ import nltk
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
-nltk.download(['punkt', 'wordnet', 'averaged_perceptron_tagger'])
+nltk.download(['stopwords', 'punkt', 'wordnet', 'averaged_perceptron_tagger'])
+stop_words = stopwords.words('english')
 
 # transformers
 from sklearn.feature_extraction.text import CountVectorizer
@@ -21,12 +22,13 @@ from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
 
 # tools
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import GridSearchCV
-import pickle
+import pickle, joblib
 from timeit import default_timer as timer
 
 # metrics
@@ -53,6 +55,7 @@ def load_data(database_filepath):
 def tokenize(text):
     '''Perform text cleaning, normalisation and tokenization on text'''
 
+    # normalize
     # replace urls with placeholder
     url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
     
@@ -63,11 +66,18 @@ def tokenize(text):
     # remove everything except letters and numbers
     text = re.sub(r'[^a-zA-Z0-9]', ' ', text)
 
-    # tokenize string
+    # set all text lower case
+    text = text.lower()
+
+    # tokenize text string
     tokens = word_tokenize(text)
 
     # remove stop words
-    tokens = [tok for tok in tokens if tok not in stopwords.words("english")]
+    # tokens = [t for t in tokens if t not in stopwords.words("english")]
+    # Calling stopwords.words causes PicklingError (why?)
+    # --> use stop_words in CountVectorizer directly instead
+    #  --> this causes warning: ['doe', 'ha', 'wa'] not in stop_words
+    tokens = [t for t in tokens if t not in stop_words]
 
     # lemmatize word tokens
     # instantiate lemmatizer
@@ -75,8 +85,8 @@ def tokenize(text):
 
     clean_tokens = []
     for tok in tokens:
-        # lemmatize, normalize and remove whitespace
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
+        # lemmatize and remove whitespace
+        clean_tok = lemmatizer.lemmatize(tok).strip()
         clean_tokens.append(clean_tok)
         
     return clean_tokens
@@ -94,7 +104,10 @@ def build_model(parameters):
             
             # process 1: text processing
             ('nlp_pipeline', Pipeline([
-                ('vect', CountVectorizer(tokenizer=tokenize)),
+                ('vect', CountVectorizer(tokenizer=tokenize, 
+                                         # stop_words=stop_words,
+                                         # lowercase=True
+                                         )),
                 ('tfidf', TfidfTransformer())
             ]))
             
@@ -133,11 +146,19 @@ def evaluate_model(model, X_test, Y_test, category_names):
     print('\n')
 
     # multi lable confusion matrix
-    # TODO: category_names labels?
     confusion_matrix = multilabel_confusion_matrix(Y_test, Y_pred)
 
+    # open text file
+    confusion_matrix_report = open('./models/reports/confusion_matrix.txt', 'w')
+
     for i in range(len(category_names)):
-        print('{}\n{}\n{}\n'.format(category_names[i], '-' * 20, confusion_matrix[i]))   
+        text = '{}\n{}\n{}\n'.format(category_names[i], '-' * 20, confusion_matrix[i])
+        print(text)   
+        confusion_matrix_report.write(text)
+
+    # close text file
+    confusion_matrix_report.close()
+
 
     # results matrix (select columns)
     cv_results = pd.DataFrame(model.cv_results_)
@@ -156,13 +177,19 @@ def evaluate_model(model, X_test, Y_test, category_names):
     print('Best estimator:', model.best_estimator_)
     print('Best params:', model.best_estimator_)
 
+    # TODO: write training reports to textfile..
+    with pd.ExcelWriter('./models/reports/report.xlsx') as writer:
+        report.to_excel(writer, sheet_name='report')
+        cv_results.to_excel(writer, sheet_name='cv_results')
+
+
     return report, confusion_matrix, cv_results
 
 
 def save_model(model, model_filepath):
     '''Save the final ML model as pickle file'''
 
-    pickle.dump(model, open(model_filepath, 'wb'))
+    joblib.dump(model, open(model_filepath, 'wb'))
 
 
 def main():
@@ -184,16 +211,30 @@ def main():
         # define model parameters (estimators + values)
         parameters = [
             {'clf': [RandomForestClassifier()],
-            'clf__n_estimators': [2, 10, 100, 200],
+            'clf__n_estimators': [10, 20, 100],
+            'clf__max_depth': [None],
+            'clf__criterion': ['gini']},
+            {'clf': [MultiOutputClassifier(LinearSVC())],
+            'clf__estimator__C': [10.0, 20.0, 100.0],
+            'clf__estimator__max_iter': [1000]},
+            {'clf': [OneVsRestClassifier(LogisticRegression())],
+            'clf__estimator__C': [10.0, 20.0, 100.0],
+            'clf__estimator__solver': ['sag']}
+        ]
+
+        '''
+        parameters = [
+            {'clf': [RandomForestClassifier()],
+            'clf__n_estimators': [2, 10, 100],
             'clf__max_depth': [None, 5, 10],
             'clf__criterion': ['gini', 'entropy']},
             {'clf': [MultiOutputClassifier(LinearSVC())],
-            'clf__estimator__C': [10.0, 100, 200],
+            'clf__estimator__C': [10.0, 100],
             'clf__estimator__max_iter': [1000, 3000]},
             {'clf': [OneVsRestClassifier(LogisticRegression())],
-            'clf__estimator__C': [10.0, 100, 200],
+            'clf__estimator__C': [10.0, 100],
             'clf__estimator__solver': ['sag', 'saga']}
-        ]
+        ]'''
 
         
         print('Building model...')
@@ -212,7 +253,7 @@ def main():
 
         # end timer
         end = timer()
-        print("\nTime: {} seconds".format(round(end - start, 2)))
+        print("\nTime: {} minutes".format(round((end - start) / 60, 2)))
 
     else:
         print('Please provide the filepath of the disaster messages database '\
