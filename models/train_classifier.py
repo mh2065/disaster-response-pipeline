@@ -122,7 +122,7 @@ def build_model(parameters):
     model = GridSearchCV(estimator=pipeline, 
                          param_grid=parameters, 
                          n_jobs=-1, 
-                         verbose=2, 
+                         verbose=3, 
                          return_train_score=True)
     
     return model
